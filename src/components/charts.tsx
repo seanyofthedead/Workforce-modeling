@@ -7,9 +7,9 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Legend,
   Line,
-  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -56,7 +56,14 @@ function PanelTooltip({
 
 // --- Workforce cost trend by fiscal year ----------------------------------
 
-export function CostTrendChart({ data }: { data: FiscalYearPoint[] }) {
+export function CostTrendChart({
+  data,
+  plannedBudget,
+}: {
+  data: FiscalYearPoint[];
+  /** Planned personnel topline; drawn as a reference line when provided. */
+  plannedBudget?: number;
+}) {
   return (
     <ResponsiveContainer width="100%" height={260}>
       <AreaChart data={data} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
@@ -76,6 +83,21 @@ export function CostTrendChart({ data }: { data: FiscalYearPoint[] }) {
           width={56}
         />
         <Tooltip content={<PanelTooltip fmt={fmtUSDCompact} />} />
+        {plannedBudget != null && (
+          <ReferenceLine
+            y={plannedBudget}
+            stroke={RED}
+            strokeDasharray="4 4"
+            strokeWidth={1.5}
+            label={{
+              value: `Planned topline ${fmtUSDCompact(plannedBudget)}`,
+              position: "insideTopRight",
+              fill: RED,
+              fontSize: 10,
+              fontWeight: 600,
+            }}
+          />
+        )}
         <Area
           type="monotone"
           dataKey="cost"
@@ -94,15 +116,58 @@ export function CostTrendChart({ data }: { data: FiscalYearPoint[] }) {
 // --- FTE demand vs supply -------------------------------------------------
 
 export function DemandSupplyChart({ data }: { data: FiscalYearPoint[] }) {
-  const projected = data.filter((d) => !d.historical);
+  // Shade the shortfall (demand above supply) as a stacked area on top of an
+  // invisible base equal to the filled line — so the red band fills the gap.
+  const projected = data
+    .filter((d) => !d.historical)
+    .map((d) => ({
+      ...d,
+      filledBase: d.filled,
+      shortfall: Math.max(0, d.required - d.filled),
+    }));
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <LineChart data={projected} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
+      <ComposedChart data={projected} margin={{ top: 10, right: 12, left: 4, bottom: 0 }}>
+        <defs>
+          <linearGradient id="gapFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={RED} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={RED} stopOpacity={0.06} />
+          </linearGradient>
+        </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
         <XAxis dataKey="fyShort" tick={axisStyle} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} />
         <YAxis tick={axisStyle} tickLine={false} axisLine={false} width={42} />
         <Tooltip content={<PanelTooltip fmt={fmtNum} />} />
-        <Legend wrapperStyle={{ fontSize: 11 }} iconType="plainline" />
+        <Legend
+          wrapperStyle={{ fontSize: 11 }}
+          iconType="plainline"
+          payload={[
+            { value: "Required FTE (demand)", type: "plainline", color: GOLD, id: "required" },
+            { value: "Filled FTE (supply)", type: "plainline", color: NAVY, id: "filled" },
+            { value: "Coverage gap", type: "square", color: RED, id: "shortfall" },
+          ]}
+        />
+        {/* invisible base lifts the shortfall band up to the supply line */}
+        <Area
+          type="monotone"
+          dataKey="filledBase"
+          stackId="gap"
+          stroke="none"
+          fill="none"
+          legendType="none"
+          tooltipType="none"
+          activeDot={false}
+        />
+        <Area
+          type="monotone"
+          dataKey="shortfall"
+          name="Coverage gap"
+          stackId="gap"
+          stroke="none"
+          fill="url(#gapFill)"
+          legendType="none"
+          activeDot={false}
+        />
         <Line
           type="monotone"
           dataKey="required"
@@ -120,7 +185,7 @@ export function DemandSupplyChart({ data }: { data: FiscalYearPoint[] }) {
           strokeWidth={2.5}
           dot={{ r: 3, fill: NAVY }}
         />
-      </LineChart>
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }
@@ -156,6 +221,12 @@ export function VacancyByDivisionChart({
           width={104}
         />
         <Tooltip content={<PanelTooltip fmt={(v) => `${v.toFixed(1)}%`} />} />
+        <ReferenceLine
+          x={12}
+          stroke={AMBER}
+          strokeDasharray="4 4"
+          label={{ value: "Target ≤12%", position: "top", fill: AMBER, fontSize: 10, fontWeight: 600 }}
+        />
         <Bar dataKey="rate" name="Vacancy rate" radius={[0, 4, 4, 0]} barSize={14}>
           {data.map((d, i) => (
             <Cell

@@ -59,88 +59,99 @@ function profile(
   };
 }
 
+// Calibrated for operational realism: vacancy rates spread from ~9% to ~24%,
+// grade profiles are mission-specific (senior-heavy front office, journey-heavy
+// budget, contractor/tech-heavy systems, reviewer-heavy controls), attrition
+// varies by talent market (tech flight high, leadership low), and the set spans
+// a healthy office through a division in genuine distress so charts show contrast.
 export const DIVISIONS: DivisionSeed[] = [
   {
     id: "front-office",
     name: "OCFO Front Office",
     shortName: "Front Office",
-    onboard: 28,
-    authorized: 32,
-    required: 30,
+    // Small, senior-heavy, sticky leadership office — the healthy anchor.
+    onboard: 30,
+    authorized: 33,
+    required: 31,
     criticality: "High",
-    attritionBias: 0.07,
-    profile: profile(0.02, 0.03, 0.05, 0.18, 0.25, 0.22, 0.1, 0.15),
+    attritionBias: 0.05,
+    profile: profile(0.02, 0.04, 0.08, 0.12, 0.24, 0.3, 0.14, 0.06),
     missionAreas: ["component-coordination", "surge-support"],
   },
   {
     id: "budget-division",
     name: "Budget Division",
     shortName: "Budget",
-    onboard: 142,
-    authorized: 165,
-    required: 170,
+    // Largest division; journey-analyst backbone of formulation/execution.
+    onboard: 138,
+    authorized: 162,
+    required: 174,
     criticality: "Critical",
-    attritionBias: 0.09,
-    profile: profile(0.05, 0.1, 0.18, 0.28, 0.18, 0.08, 0.01, 0.12),
+    attritionBias: 0.1,
+    profile: profile(0.04, 0.11, 0.22, 0.29, 0.15, 0.07, 0.01, 0.11),
     missionAreas: ["budget-formulation", "budget-execution"],
   },
   {
     id: "financial-systems",
     name: "Financial Systems Division",
     shortName: "Fin. Systems",
-    onboard: 88,
+    // Distress case: heavy contractor reliance, tech-talent flight, widest gap.
+    onboard: 76,
     authorized: 104,
-    required: 112,
+    required: 118,
     criticality: "Critical",
-    attritionBias: 0.12,
-    profile: profile(0.04, 0.08, 0.15, 0.25, 0.15, 0.06, 0.01, 0.26),
+    attritionBias: 0.16,
+    profile: profile(0.05, 0.08, 0.14, 0.22, 0.13, 0.05, 0.02, 0.31),
     missionAreas: ["systems-modernization", "data-analytics"],
   },
   {
     id: "resource-management",
     name: "Resource Management Division",
     shortName: "Resource Mgmt",
-    onboard: 76,
-    authorized: 88,
-    required: 92,
+    onboard: 71,
+    authorized: 84,
+    required: 90,
     criticality: "High",
-    attritionBias: 0.08,
-    profile: profile(0.04, 0.09, 0.16, 0.27, 0.19, 0.09, 0.02, 0.14),
+    attritionBias: 0.09,
+    profile: profile(0.04, 0.09, 0.17, 0.27, 0.19, 0.09, 0.02, 0.13),
     missionAreas: ["budget-execution", "data-analytics", "surge-support"],
   },
   {
     id: "financial-reporting",
     name: "Financial Reporting Division",
     shortName: "Fin. Reporting",
-    onboard: 95,
+    // Audit-driven accountant shop; well-staffed and stable.
+    onboard: 98,
     authorized: 110,
-    required: 108,
+    required: 106,
     criticality: "High",
-    attritionBias: 0.08,
-    profile: profile(0.06, 0.12, 0.2, 0.26, 0.16, 0.07, 0.01, 0.12),
+    attritionBias: 0.07,
+    profile: profile(0.06, 0.13, 0.21, 0.26, 0.15, 0.06, 0.01, 0.12),
     missionAreas: ["financial-reporting", "internal-controls"],
   },
   {
     id: "internal-controls",
     name: "Internal Controls Division",
     shortName: "Internal Controls",
-    onboard: 54,
+    // A-123 reviewer-heavy (GS-14); scope grew faster than hiring.
+    onboard: 53,
     authorized: 66,
-    required: 72,
+    required: 73,
     criticality: "Critical",
-    attritionBias: 0.1,
-    profile: profile(0.03, 0.07, 0.14, 0.26, 0.22, 0.1, 0.02, 0.16),
+    attritionBias: 0.11,
+    profile: profile(0.03, 0.07, 0.14, 0.26, 0.23, 0.1, 0.02, 0.15),
     missionAreas: ["internal-controls", "financial-reporting"],
   },
   {
     id: "procurement-liaison",
     name: "Procurement Support Liaison",
     shortName: "Procurement",
-    onboard: 38,
-    authorized: 44,
-    required: 46,
+    // Small support office, modest criticality, near requirement.
+    onboard: 40,
+    authorized: 45,
+    required: 44,
     criticality: "Moderate",
-    attritionBias: 0.07,
+    attritionBias: 0.08,
     profile: profile(0.06, 0.12, 0.22, 0.26, 0.16, 0.06, 0.01, 0.11),
     missionAreas: ["budget-execution", "component-coordination"],
   },
@@ -148,23 +159,28 @@ export const DIVISIONS: DivisionSeed[] = [
     id: "component-coordination",
     name: "Component Coordination Office",
     shortName: "Component Coord.",
-    onboard: 47,
+    // Relationship-dependent liaison work; senior analysts carry the load.
+    onboard: 44,
     authorized: 56,
-    required: 60,
+    required: 61,
     criticality: "High",
-    attritionBias: 0.09,
-    profile: profile(0.04, 0.09, 0.17, 0.27, 0.2, 0.1, 0.02, 0.11),
+    attritionBias: 0.1,
+    profile: profile(0.04, 0.09, 0.16, 0.27, 0.2, 0.1, 0.03, 0.11),
     missionAreas: ["component-coordination", "surge-support", "budget-formulation"],
   },
 ];
 
-/** Planned personnel budget at the enterprise level (FY of record). */
-export const PLANNED_PERSONNEL_BUDGET = 92_500_000;
+/**
+ * Planned personnel topline (FY of record). Set below full authorized cost on a
+ * realistic vacancy-lapse assumption, so the baseline runs modestly over (~-2.6%)
+ * — a believable tension — while scenarios spread clearly over/under.
+ */
+export const PLANNED_PERSONNEL_BUDGET = 94_350_000;
 
 /** Historical enterprise personnel cost, used to anchor the trend chart. */
 export const HISTORICAL_COST: { fy: string; fyShort: string; cost: number }[] = [
-  { fy: "FY2024", fyShort: "FY24", cost: 79_200_000 },
-  { fy: "FY2025", fyShort: "FY25", cost: 84_600_000 },
+  { fy: "FY2024", fyShort: "FY24", cost: 84_200_000 },
+  { fy: "FY2025", fyShort: "FY25", cost: 90_600_000 },
 ];
 
 export const BASE_FISCAL_YEAR = 2026;

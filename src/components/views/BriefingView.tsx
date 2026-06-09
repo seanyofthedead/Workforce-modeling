@@ -9,11 +9,13 @@ import {
   GitCompareArrows,
   MessageSquareQuote,
   ShieldHalf,
+  Printer,
 } from "lucide-react";
 import { useModel } from "../model-context";
 import { Card, CardHeader, SectionTitle, RiskBadge, Pill, CriticalityBadge } from "../ui";
 import { computeModel } from "@/lib/calc";
 import { DIVISIONS, SCENARIOS } from "@/lib/data";
+import { topStaffingRisks, topHiringActions } from "@/lib/selectors";
 import { fmtNum, fmtUSDCompact, fmtSignedPct } from "@/lib/format";
 
 export default function BriefingView() {
@@ -22,9 +24,7 @@ export default function BriefingView() {
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
 
   // Top 5 staffing risks.
-  const staffingRisks = [...model.divisions]
-    .sort((a, b) => b.riskScore - a.riskScore)
-    .slice(0, 5);
+  const staffingRisks = topStaffingRisks(model, 5);
 
   // Top 5 budget risks (most negative variance contributions).
   const totalAuth = DIVISIONS.reduce((s, x) => s + x.authorized, 0);
@@ -38,14 +38,7 @@ export default function BriefingView() {
     .slice(0, 5);
 
   // Recommended hiring actions — highest criticality x gap.
-  const hiringActions = [...model.divisions]
-    .filter((d) => d.gap > 0)
-    .map((d) => ({
-      ...d,
-      priority: d.gap * (d.criticality === "Critical" ? 1.5 : d.criticality === "High" ? 1.15 : 0.85),
-    }))
-    .sort((a, b) => b.priority - a.priority)
-    .slice(0, 5);
+  const hiringActions = topHiringActions(model, 5);
 
   // Scenario tradeoffs — compute every scenario once.
   const scenarioCompare = useMemo(
@@ -69,11 +62,30 @@ export default function BriefingView() {
 
   return (
     <div className="space-y-5">
-      <SectionTitle
-        title="Leadership Briefing View"
-        subtitle="OCFO Resource Management Division — workforce posture and decision brief"
-        icon={<ClipboardList className="h-4 w-4" />}
-      />
+      {/* Print-only masthead so the leave-behind identifies itself */}
+      <div className="hidden print:block">
+        <div className="text-lg font-semibold text-navy-900">
+          Workforce Modeling Command Center — Leadership Brief
+        </div>
+        <div className="text-xs text-slate-500">
+          DHS HQ · OCFO · Resource Management Division · Scenario: {scenario.name} · Synthetic
+          demonstration data
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 print:hidden">
+        <SectionTitle
+          title="Leadership Briefing View"
+          subtitle="OCFO Resource Management Division — workforce posture and decision brief"
+          icon={<ClipboardList className="h-4 w-4" />}
+        />
+        <button
+          onClick={() => window.print()}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-navy-700 px-3 py-2 text-xs font-semibold text-white shadow-card hover:bg-navy-600"
+        >
+          <Printer className="h-4 w-4" /> Print brief
+        </button>
+      </div>
 
       {/* Posture banner */}
       <Card className="overflow-hidden">
