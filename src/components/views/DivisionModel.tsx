@@ -1,0 +1,199 @@
+"use client";
+
+import { useState } from "react";
+import { Building2, LayoutGrid, Table2 } from "lucide-react";
+import { useModel } from "../model-context";
+import {
+  Card,
+  CriticalityBadge,
+  RiskBadge,
+  Meter,
+  SectionTitle,
+  toneForCoverage,
+  Pill,
+} from "../ui";
+import { GRADES } from "@/lib/types";
+import { fmtNum, fmtUSD, fmtUSDCompact, fmtSigned } from "@/lib/format";
+
+export default function DivisionModel() {
+  const { model } = useModel();
+  const [view, setView] = useState<"cards" | "table">("cards");
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <SectionTitle
+          title="Division Workforce Model"
+          subtitle="Onboard strength, requirement, grade mix, and risk by OCFO division"
+          icon={<Building2 className="h-4 w-4" />}
+        />
+        <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
+          <button
+            onClick={() => setView("cards")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
+              view === "cards" ? "bg-navy-700 text-white" : "text-slate-600"
+            }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Cards
+          </button>
+          <button
+            onClick={() => setView("table")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
+              view === "table" ? "bg-navy-700 text-white" : "text-slate-600"
+            }`}
+          >
+            <Table2 className="h-3.5 w-3.5" /> Table
+          </button>
+        </div>
+      </div>
+
+      {view === "cards" ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-2">
+          {model.divisions.map((d) => {
+            const gap = d.gap;
+            const topGrades = GRADES.filter((g) => d.gradeCounts[g] > 0)
+              .sort((a, b) => d.gradeCounts[b] - d.gradeCounts[a])
+              .slice(0, 4);
+            return (
+              <Card key={d.id} className="overflow-hidden">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-navy-900">{d.name}</h3>
+                      <CriticalityBadge level={d.criticality} />
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{d.riskDriver}</p>
+                  </div>
+                  <RiskBadge level={d.risk} />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 px-5 py-4">
+                  <Metric label="Current FTE" value={fmtNum(d.onboard)} />
+                  <Metric label="Required FTE" value={fmtNum(d.required)} />
+                  <Metric
+                    label={gap > 0 ? "Shortfall" : gap < 0 ? "Surplus" : "Balanced"}
+                    value={fmtSigned(-gap)}
+                    tone={gap > 0 ? "red" : gap < 0 ? "emerald" : "slate"}
+                  />
+                  <Metric label="Vacancies" value={fmtNum(d.vacancies)} tone="amber" />
+                  <Metric label="Avg loaded cost" value={fmtUSDCompact(d.avgLoadedCost)} />
+                  <Metric label="Annual cost" value={fmtUSDCompact(d.annualCost)} />
+                </div>
+
+                <div className="px-5 pb-3">
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Mission coverage</span>
+                    <span className="font-medium text-navy-900">{d.coverage.toFixed(0)}%</span>
+                  </div>
+                  <Meter value={d.coverage} tone={toneForCoverage(d.coverage)} />
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 border-t border-slate-100 bg-slate-50/60 px-5 py-3">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                    Grade mix
+                  </span>
+                  {topGrades.map((g) => (
+                    <Pill key={g} tone="navy">
+                      {g}: {d.gradeCounts[g]}
+                    </Pill>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="px-4 py-3 font-medium">Division</th>
+                  <th className="px-4 py-3 text-right font-medium">Current</th>
+                  <th className="px-4 py-3 text-right font-medium">Required</th>
+                  <th className="px-4 py-3 text-right font-medium">Gap</th>
+                  <th className="px-4 py-3 text-right font-medium">Vac.</th>
+                  <th className="px-4 py-3 text-right font-medium">Avg Cost</th>
+                  <th className="px-4 py-3 text-right font-medium">Annual Cost</th>
+                  <th className="px-4 py-3 text-center font-medium">Criticality</th>
+                  <th className="px-4 py-3 text-center font-medium">Risk</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {model.divisions.map((d) => (
+                  <tr key={d.id} className="hover:bg-slate-50/70">
+                    <td className="px-4 py-3 font-medium text-navy-900">{d.name}</td>
+                    <td className="px-4 py-3 text-right tabular">{fmtNum(d.onboard)}</td>
+                    <td className="px-4 py-3 text-right tabular">{fmtNum(d.required)}</td>
+                    <td
+                      className={`px-4 py-3 text-right tabular font-medium ${
+                        d.gap > 0 ? "text-red-600" : d.gap < 0 ? "text-emerald-600" : "text-slate-500"
+                      }`}
+                    >
+                      {fmtSigned(-d.gap)}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular text-amber-700">
+                      {fmtNum(d.vacancies)}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular">{fmtUSD(d.avgLoadedCost)}</td>
+                    <td className="px-4 py-3 text-right tabular">{fmtUSDCompact(d.annualCost)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <CriticalityBadge level={d.criticality} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <RiskBadge level={d.risk} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-slate-200 bg-slate-50 font-semibold text-navy-900">
+                  <td className="px-4 py-3">Enterprise total</td>
+                  <td className="px-4 py-3 text-right tabular">{fmtNum(model.kpis.onboard)}</td>
+                  <td className="px-4 py-3 text-right tabular">{fmtNum(model.kpis.required)}</td>
+                  <td className="px-4 py-3 text-right tabular text-red-600">
+                    {fmtSigned(-(model.kpis.required - model.kpis.onboard))}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular text-amber-700">
+                    {fmtNum(model.kpis.vacancies)}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular">—</td>
+                  <td className="px-4 py-3 text-right tabular">
+                    {fmtUSDCompact(model.kpis.annualCost)}
+                  </td>
+                  <td className="px-4 py-3" colSpan={2} />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  tone = "navy",
+}: {
+  label: string;
+  value: string;
+  tone?: "navy" | "red" | "emerald" | "amber" | "slate";
+}) {
+  const tones: Record<string, string> = {
+    navy: "text-navy-900",
+    red: "text-red-600",
+    emerald: "text-emerald-600",
+    amber: "text-amber-700",
+    slate: "text-slate-600",
+  };
+  return (
+    <div>
+      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+        {label}
+      </div>
+      <div className={`mt-0.5 text-base font-semibold tabular ${tones[tone]}`}>{value}</div>
+    </div>
+  );
+}
