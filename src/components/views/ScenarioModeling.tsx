@@ -1,6 +1,13 @@
 "use client";
 
-import { SlidersHorizontal, RotateCcw, Check } from "lucide-react";
+import {
+  SlidersHorizontal,
+  RotateCcw,
+  Check,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+} from "lucide-react";
 import { useModel } from "../model-context";
 import { Card, CardHeader, SectionTitle, RiskBadge, InsightPanel } from "../ui";
 import { SCENARIOS } from "@/lib/data";
@@ -11,6 +18,38 @@ import {
   fmtPct,
   fmtSignedPct,
 } from "@/lib/format";
+
+interface ImpactItem {
+  label: string;
+  now: string;
+  base: string;
+  diff: number;
+  goodWhen: "up" | "down";
+}
+
+function ImpactChip({ item }: { item: ImpactItem }) {
+  const flat = Math.abs(item.diff) < 1e-9;
+  const dir: "up" | "down" | "flat" = flat ? "flat" : item.diff > 0 ? "up" : "down";
+  const good = dir === item.goodWhen;
+  const Icon = dir === "up" ? ArrowUpRight : dir === "down" ? ArrowDownRight : Minus;
+  const tone = flat ? "text-slate-400" : good ? "text-emerald-600" : "text-red-600";
+  return (
+    <div className="bg-white p-4 transition-colors">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+        {item.label}
+      </div>
+      <div className="mt-1 text-xl font-semibold tabular tracking-tight text-navy-900 transition-all duration-300">
+        {item.now}
+      </div>
+      <div className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${tone}`}>
+        <Icon className="h-3.5 w-3.5" />
+        {flat ? "no change" : "vs"}
+        {!flat && <span className="text-slate-400">baseline {item.base}</span>}
+        {flat && <span className="text-slate-400">vs baseline</span>}
+      </div>
+    </div>
+  );
+}
 
 interface SliderDef {
   key: keyof ScenarioParams;
@@ -93,6 +132,38 @@ export default function ScenarioModeling() {
 
   const k = model.kpis;
   const b = baselineModel.kpis;
+
+  const ttt = (m: number) => (m >= 99 ? "Off track" : `${m} mo`);
+  const impact: ImpactItem[] = [
+    {
+      label: "Personnel cost",
+      now: fmtUSDCompact(k.annualCost),
+      base: fmtUSDCompact(b.annualCost),
+      diff: k.annualCost - b.annualCost,
+      goodWhen: "down",
+    },
+    {
+      label: "Mission coverage",
+      now: `${k.coverage.toFixed(0)}%`,
+      base: `${b.coverage.toFixed(0)}%`,
+      diff: k.coverage - b.coverage,
+      goodWhen: "up",
+    },
+    {
+      label: "Budget variance",
+      now: fmtUSDCompact(k.variance),
+      base: fmtUSDCompact(b.variance),
+      diff: k.variance - b.variance,
+      goodWhen: "up",
+    },
+    {
+      label: "Time to target",
+      now: ttt(k.timeToTargetMonths),
+      base: ttt(b.timeToTargetMonths),
+      diff: k.timeToTargetMonths - b.timeToTargetMonths,
+      goodWhen: "down",
+    },
+  ];
 
   const metrics: {
     label: string;
@@ -184,6 +255,23 @@ export default function ScenarioModeling() {
         })}
       </div>
 
+      {/* Impact ribbon — what this scenario changes vs the baseline */}
+      <Card>
+        <CardHeader
+          title="Impact vs. Baseline"
+          subtitle={
+            isCustom
+              ? "Live effect of your adjustments against the Baseline / Current Plan"
+              : "Effect of this scenario against the Baseline / Current Plan"
+          }
+        />
+        <div className="grid grid-cols-2 gap-px bg-slate-100 lg:grid-cols-4">
+          {impact.map((m) => (
+            <ImpactChip key={m.label} item={m} />
+          ))}
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {/* Controls */}
         <Card className="lg:col-span-2">
@@ -237,7 +325,7 @@ export default function ScenarioModeling() {
             <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-3">
               {metrics.map((m) => (
                 <div key={m.label} className="bg-white p-4">
-                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
                     {m.label}
                   </div>
                   <div className="mt-1 text-xl font-semibold tabular text-navy-900">
@@ -257,7 +345,7 @@ export default function ScenarioModeling() {
                 </div>
               ))}
               <div className="bg-white p-4">
-                <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
                   Overall Risk
                 </div>
                 <div className="mt-2">

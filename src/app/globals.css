@@ -38,3 +38,25 @@ body {
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Print: clean leave-behind one-pager. Preserve card/badge colors. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  body {
+    background: #ffffff;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .shadow-card,
+  .shadow-panel {
+    box-shadow: none !important;
+  }
+}

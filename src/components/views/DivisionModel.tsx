@@ -5,6 +5,7 @@ import { Building2, LayoutGrid, Table2 } from "lucide-react";
 import { useModel } from "../model-context";
 import {
   Card,
+  CardHeader,
   CriticalityBadge,
   RiskBadge,
   Meter,
@@ -14,10 +15,12 @@ import {
 } from "../ui";
 import { GRADES } from "@/lib/types";
 import { fmtNum, fmtUSD, fmtUSDCompact, fmtSigned } from "@/lib/format";
+import StaffingWaterfall from "../StaffingWaterfall";
 
 export default function DivisionModel() {
   const { model } = useModel();
   const [view, setView] = useState<"cards" | "table">("cards");
+  const k = model.kpis;
 
   return (
     <div className="space-y-5">
@@ -46,6 +49,22 @@ export default function DivisionModel() {
           </button>
         </div>
       </div>
+
+      {/* Enterprise staffing waterfall — have vs funded vs need */}
+      <Card>
+        <CardHeader
+          title="Enterprise Staffing — Have vs. Funded vs. Need"
+          subtitle="Onboard strength against authorized funding and mission requirement"
+          icon={<Building2 className="h-4 w-4" />}
+        />
+        <div className="p-5">
+          <StaffingWaterfall
+            onboard={k.onboard}
+            authorized={k.authorized}
+            required={k.required}
+          />
+        </div>
+      </Card>
 
       {view === "cards" ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-2">
@@ -89,7 +108,7 @@ export default function DivisionModel() {
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 border-t border-slate-100 bg-slate-50/60 px-5 py-3">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
                     Grade mix
                   </span>
                   {topGrades.map((g) => (
@@ -190,7 +209,7 @@ function Metric({
   };
   return (
     <div>
-      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
         {label}
       </div>
       <div className={`mt-0.5 text-base font-semibold tabular ${tones[tone]}`}>{value}</div>

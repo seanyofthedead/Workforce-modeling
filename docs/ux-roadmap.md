@@ -12,7 +12,7 @@ different hiring scenarios?*
 
 **Status legend:** `NOT STARTED` · `IN PROGRESS` · `COMPLETE`
 
-_Last updated: 2026-06-09_
+_Last updated: 2026-06-09 (P0 complete; P1 complete)_
 
 ---
 
@@ -83,9 +83,10 @@ analyst-framed to executive-ready (projected 71 → ~84/100).
 
 ### P1 — High Impact
 Significantly improve executive understanding; carry the product from ~84 to ~91/100.
+**All P1 items complete (2026-06-09).**
 
 #### P1-1 · Staffing waterfall (reconcile onboard / authorized / required)
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** Onboard, authorized, required, vacancies, and gap are scattered across
   separate tiles with no single reconciling picture.
 - **Proposed Enhancement:** One stacked horizontal bar — Onboard → +Vacancies-to-Authorized
@@ -94,7 +95,7 @@ Significantly improve executive understanding; carry the product from ~84 to ~91
 - **Estimated Effort:** Medium (M).
 
 #### P1-2 · Scenario impact ribbon (animated before→after)
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** Scenario changes are read as static numbers, not seen as movement.
 - **Proposed Enhancement:** A ribbon of before→after chips with directional arrows and
   red/green tone, animated on change, above the Scenario Outcomes grid.
@@ -102,7 +103,7 @@ Significantly improve executive understanding; carry the product from ~84 to ~91
 - **Estimated Effort:** Medium (M).
 
 #### P1-3 · Surface hiring actions & watchlist on the dashboard
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** "What hiring actions are needed?" only exists on the Briefing tab.
 - **Proposed Enhancement:** A condensed "Top hiring actions" + "Divisions to watch" panel
   on the dashboard, reusing Briefing logic.
@@ -111,7 +112,7 @@ Significantly improve executive understanding; carry the product from ~84 to ~91
 - **Estimated Effort:** Medium (M).
 
 #### P1-4 · Demand-vs-supply gap shading
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** The gap between required and filled lines — the actual story — is
   invisible between two lines.
 - **Proposed Enhancement:** Tinted area between the lines where demand exceeds supply.
@@ -119,14 +120,14 @@ Significantly improve executive understanding; carry the product from ~84 to ~91
 - **Estimated Effort:** Medium (M). *(May be delivered together with P0-4.)*
 
 #### P1-5 · Export / Print Briefing one-pager
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** No leave-behind artifact for leadership.
 - **Proposed Enhancement:** "Print brief" button + print stylesheet hiding nav/banner.
 - **Expected Demo Impact:** Confident closer; the meeting walks out with the brief.
 - **Estimated Effort:** Medium (M).
 
 #### P1-6 · Housekeeping — calmer demo banner, contrast, "as-of" stamp
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** Amber banner dominates first attention; micro-labels are low-contrast;
   no time anchor on the data.
 - **Proposed Enhancement:** Slim slate banner + "Demo data" pill; `slate-400`→`slate-600`
@@ -192,3 +193,21 @@ _Move items here as work finishes; preserve history._
   chip; hero and key tiles now carry plain-English verdicts ("Understaffed", "Over topline").
 - **P0-6 · How-to-read legend** — _2026-06-09._ Added a dismissible `HowToRead` strip defining
   risk levels, criticality, and the Authorized/Required/Onboard distinction.
+- **P1-1 · Staffing waterfall** — _2026-06-09._ New `StaffingWaterfall.tsx` (Onboard → funded
+  vacancies → unfunded gap to requirement) leads the Division Model, reconciling the five
+  staffing nouns in one bar.
+- **P1-2 · Scenario impact ribbon** — _2026-06-09._ Added an "Impact vs. Baseline" ribbon to
+  Scenario Modeling — four before→after chips (cost, coverage, variance, time-to-target) with
+  directional arrows and red/green tone, animated on change.
+- **P1-3 · Hiring actions & watchlist on dashboard** — _2026-06-09._ Added "Recommended Next
+  Actions" + "Divisions to Watch" cards to the Executive Dashboard, backed by a shared
+  `lib/selectors.ts` so the dashboard and Briefing tell an identical story. Closes the "what
+  should we do next?" gap on the hero screen.
+- **P1-4 · Demand-vs-supply gap shading** — _2026-06-09._ Delivered with P0-4; red coverage-gap
+  band now fills the space between the demand and supply lines.
+- **P1-5 · Print briefing one-pager** — _2026-06-09._ "Print brief" button on the Briefing View,
+  print-only brief masthead, `print:hidden` on app chrome, and an `@media print` block for a
+  clean leave-behind.
+- **P1-6 · Housekeeping** — _2026-06-09._ Calmer slate demo banner with a "Demo data" pill,
+  "Planning FY2026 · as of June 2026" stamp in the masthead, and `slate-400`→`slate-500`
+  contrast bump on metric micro-labels.

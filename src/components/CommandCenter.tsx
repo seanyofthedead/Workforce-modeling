@@ -68,7 +68,7 @@ function ScenarioIndicator() {
 function ScenarioSwitcher() {
   const { scenarioId, isCustom, selectScenario, resetScenario } = useModel();
   return (
-    <div className="border-b border-slate-200 bg-white">
+    <div className="border-b border-slate-200 bg-white print:hidden">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2 sm:px-6">
         <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
           Scenario
@@ -111,7 +111,7 @@ function Shell() {
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Masthead */}
-      <header className="border-b border-navy-800 bg-navy-900 text-white">
+      <header className="border-b border-navy-800 bg-navy-900 text-white print:hidden">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-white/10 p-2 ring-1 ring-white/15">
@@ -123,6 +123,9 @@ function Shell() {
               </h1>
               <p className="text-[11px] text-navy-200 sm:text-xs">
                 DHS HQ · Office of the Chief Financial Officer · Resource Management Division
+              </p>
+              <p className="mt-0.5 text-[10px] text-navy-300">
+                Planning year FY2026 · as of June 2026 · synthetic demonstration data
               </p>
             </div>
           </div>
@@ -157,12 +160,16 @@ function Shell() {
       {/* Global scenario switcher — available on every screen */}
       <ScenarioSwitcher />
 
-      {/* Demo disclosure banner */}
-      <div className="border-b border-amber-200 bg-amber-50">
-        <div className="mx-auto max-w-[1400px] px-4 py-1.5 text-center text-[11px] font-medium text-amber-800 sm:px-6">
-          DEMONSTRATION ENVIRONMENT — Synthetic, illustrative data only. Not actual DHS, OCFO,
-          or federal personnel or budget information. Outputs support, and do not replace,
-          leadership judgment.
+      {/* Demo disclosure banner — quiet, non-competing */}
+      <div className="border-b border-slate-200 bg-slate-100">
+        <div className="mx-auto flex max-w-[1400px] items-center gap-2 px-4 py-1.5 text-[11px] text-slate-500 sm:px-6">
+          <span className="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+            Demo data
+          </span>
+          <span>
+            Synthetic, illustrative data only — not actual DHS, OCFO, or federal personnel or
+            budget information. Outputs support, and do not replace, leadership judgment.
+          </span>
         </div>
       </div>
 
