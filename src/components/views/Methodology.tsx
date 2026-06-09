@@ -86,8 +86,10 @@ export default function Methodology() {
               shortfall; positive variance signals under-execution.
             </Step>
             <Step n={5}>
-              Time-to-target estimates how long authorized vacancies take to close at the
-              scenario&rsquo;s net fill rate (hires minus attrition).
+              Time-to-target reads the month authorized vacancies effectively close
+              (95% of authorized strength) directly off the year-by-year vacancy
+              projection, interpolating between fiscal years. If the curve plateaus
+              above target, attrition outpaces hiring and the target is off track.
             </Step>
           </ol>
         </Card>
