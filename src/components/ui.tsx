@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
+import { Info, X } from "lucide-react";
 import { RiskLevel, Criticality } from "@/lib/types";
 
 // --- layout primitives ----------------------------------------------------
@@ -157,6 +158,77 @@ export function toneForCoverage(c: number): "emerald" | "amber" | "red" {
   if (c >= 92) return "emerald";
   if (c >= 82) return "amber";
   return "red";
+}
+
+// --- how to read this (legend) --------------------------------------------
+
+/**
+ * Dismissible legend that decodes the two badge taxonomies (Risk, Criticality)
+ * and the three staffing nouns (Authorized / Required / Onboard) so a first-time
+ * viewer can read the screen without narration.
+ */
+export function HowToRead() {
+  const [open, setOpen] = useState(true);
+  if (!open) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-navy-700">
+            <Info className="h-4 w-4" /> How to read this
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
+            <span className="font-semibold text-slate-700">Risk:</span>
+            <LegendDot className="bg-red-500" label="Severe" />
+            <LegendDot className="bg-amber-500" label="Elevated" />
+            <LegendDot className="bg-yellow-400" label="Moderate" />
+            <LegendDot className="bg-emerald-500" label="Low" />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600">
+            <span className="font-semibold text-slate-700">Mission criticality:</span>
+            <span className="font-medium text-navy-800">Critical</span>
+            <span>›</span>
+            <span className="text-navy-700">High</span>
+            <span>›</span>
+            <span className="text-slate-500">Moderate</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+            <span>
+              <strong className="text-navy-800">Onboard</strong> = staff today
+            </span>
+            <span className="text-slate-300">·</span>
+            <span>
+              <strong className="text-navy-800">Authorized</strong> = funded ceiling
+            </span>
+            <span className="text-slate-300">·</span>
+            <span>
+              <strong className="text-navy-800">Required</strong> = mission need
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setOpen(false)}
+          aria-label="Dismiss legend"
+          className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function LegendDot({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`inline-block h-2 w-2 rounded-full ${className}`} />
+      {label}
+    </span>
+  );
 }
 
 // --- insight panel --------------------------------------------------------

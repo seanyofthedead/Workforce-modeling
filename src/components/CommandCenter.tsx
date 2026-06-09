@@ -11,6 +11,7 @@ import {
   ClipboardList,
   BookOpen,
   ShieldHalf,
+  RotateCcw,
 } from "lucide-react";
 import { ModelProvider, useModel } from "./model-context";
 import { SCENARIOS } from "@/lib/data";
@@ -64,6 +65,46 @@ function ScenarioIndicator() {
   );
 }
 
+function ScenarioSwitcher() {
+  const { scenarioId, isCustom, selectScenario, resetScenario } = useModel();
+  return (
+    <div className="border-b border-slate-200 bg-white">
+      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2 sm:px-6">
+        <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          Scenario
+        </span>
+        <div className="flex flex-wrap gap-1">
+          {SCENARIOS.map((s) => {
+            const active = s.id === scenarioId;
+            return (
+              <button
+                key={s.id}
+                onClick={() => selectScenario(s.id)}
+                title={s.tagline}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-navy-700 text-white shadow-card"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {s.name}
+              </button>
+            );
+          })}
+        </div>
+        {isCustom && (
+          <button
+            onClick={resetScenario}
+            className="ml-auto inline-flex items-center gap-1 rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            <RotateCcw className="h-3 w-3" /> Reset adjustments
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Shell() {
   const [tab, setTab] = useState<TabId>("dashboard");
 
@@ -112,6 +153,9 @@ function Shell() {
           </div>
         </nav>
       </header>
+
+      {/* Global scenario switcher — available on every screen */}
+      <ScenarioSwitcher />
 
       {/* Demo disclosure banner */}
       <div className="border-b border-amber-200 bg-amber-50">
