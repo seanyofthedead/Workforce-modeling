@@ -7,21 +7,23 @@ import {
   CalendarClock,
   DollarSign,
   Scale,
-  Gauge,
   TrendingUp,
   AlertTriangle,
   ArrowRight,
 } from "lucide-react";
+import { UserPlus, Eye } from "lucide-react";
 import { useModel } from "../model-context";
 import { StatTile } from "../kpi";
-import { Card, CardHeader, InsightPanel, RiskBadge } from "../ui";
+import { Card, CardHeader, HowToRead, RiskBadge, CriticalityBadge, Pill } from "../ui";
+import DecisionBanner from "./DecisionBanner";
 import {
   CostTrendChart,
   DemandSupplyChart,
   VacancyByDivisionChart,
   VarianceByOrgChart,
 } from "../charts";
-import { DIVISIONS, SCENARIOS } from "@/lib/data";
+import { DIVISIONS } from "@/lib/data";
+import { topStaffingRisks, topHiringActions } from "@/lib/selectors";
 import { fmtNum, fmtUSDCompact, fmtSignedPct, fmtSigned } from "@/lib/format";
 
 export default function ExecutiveDashboard({
@@ -29,37 +31,43 @@ export default function ExecutiveDashboard({
 }: {
   onNavigate: (tab: string) => void;
 }) {
-  const { model, baselineModel, scenarioId } = useModel();
+  const { model, baselineModel, scenarioId, isCustom } = useModel();
   const k = model.kpis;
   const b = baselineModel.kpis;
-  const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
+  const onBaseline = scenarioId === "baseline" && !isCustom;
+  const vacancyRate = k.authorized > 0 ? (k.vacancies / k.authorized) * 100 : 0;
 
   const vacancyData = model.divisions.map((d) => ({
     name: d.shortName,
     rate: d.authorized > 0 ? (d.vacancies / d.authorized) * 100 : 0,
   }));
 
+  const totalAuth = DIVISIONS.reduce((s, x) => s + x.authorized, 0);
   const varianceData = model.divisions.map((d) => {
     const seed = DIVISIONS.find((x) => x.id === d.id)!;
-    // Per-division planned share derived from authorized strength.
-    const totalAuth = DIVISIONS.reduce((s, x) => s + x.authorized, 0);
-    const planned =
-      k.plannedBudget * (seed.authorized / totalAuth);
+    const planned = k.plannedBudget * (seed.authorized / totalAuth);
     return { name: d.shortName, variance: planned - d.annualCost };
   });
 
-  const varianceTone = k.variance >= 0 ? "emerald" : "red";
+  const hiringActions = topHiringActions(model, 3);
+  const watchlist = topStaffingRisks(model, 3);
 
   return (
     <div className="space-y-6">
-      {/* KPI ROW */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-3">
+      {/* ANSWER-FIRST VERDICT */}
+      <DecisionBanner />
+
+      {/* HOW TO READ THIS */}
+      <HowToRead />
+
+      {/* SECONDARY KPI STRIP — supporting detail under the hero verdict */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatTile
           label="Onboard FTE"
           value={fmtNum(k.onboard)}
           sublabel={`of ${fmtNum(k.authorized)} authorized`}
           icon={<Users className="h-4 w-4" />}
-          delta={`${fmtSigned(k.onboard - b.onboard)} vs baseline`}
+          delta={onBaseline ? undefined : `${fmtSigned(k.onboard - b.onboard)} vs baseline`}
           deltaDirection={k.onboard > b.onboard ? "up" : k.onboard < b.onboard ? "down" : "flat"}
           deltaGoodWhen="up"
         />
@@ -72,49 +80,29 @@ export default function ExecutiveDashboard({
         <StatTile
           label="Current Vacancies"
           value={fmtNum(k.vacancies)}
-          sublabel={`${((k.vacancies / k.authorized) * 100).toFixed(1)}% vacancy rate`}
+          sublabel={`${vacancyRate.toFixed(1)}% vacancy rate`}
           icon={<UserMinus className="h-4 w-4" />}
           accent="amber"
-          delta={`${fmtSigned(k.vacancies - b.vacancies)} vs baseline`}
-          deltaDirection={k.vacancies > b.vacancies ? "up" : k.vacancies < b.vacancies ? "down" : "flat"}
-          deltaGoodWhen="down"
+          statusWord={vacancyRate > 12 ? "Above target" : "On target"}
+          statusTone={vacancyRate > 12 ? "amber" : "emerald"}
         />
         <StatTile
           label="Projected EOY Vacancies"
           value={fmtNum(k.projectedVacancies)}
-          sublabel={`End of FY2030 trajectory`}
+          sublabel="End of FY2030 trajectory"
           icon={<CalendarClock className="h-4 w-4" />}
           accent={k.projectedVacancies > k.vacancies ? "red" : "emerald"}
+          statusWord={k.projectedVacancies > k.vacancies ? "Rising" : "Improving"}
+          statusTone={k.projectedVacancies > k.vacancies ? "red" : "emerald"}
         />
         <StatTile
           label="Annual Personnel Cost"
           value={fmtUSDCompact(k.annualCost)}
           sublabel={`Planned: ${fmtUSDCompact(k.plannedBudget)}`}
           icon={<DollarSign className="h-4 w-4" />}
-          delta={`${fmtSignedPct((k.annualCost - b.annualCost) / b.annualCost)} vs baseline`}
+          delta={onBaseline ? undefined : `${fmtSignedPct((k.annualCost - b.annualCost) / b.annualCost)} vs baseline`}
           deltaDirection={k.annualCost > b.annualCost ? "up" : k.annualCost < b.annualCost ? "down" : "flat"}
           deltaGoodWhen="down"
-        />
-        <StatTile
-          label="Projected Budget Variance"
-          value={fmtUSDCompact(k.variance)}
-          sublabel={k.variance >= 0 ? "Surplus to topline" : "Shortfall vs topline"}
-          icon={<Scale className="h-4 w-4" />}
-          accent={varianceTone}
-          delta={fmtSignedPct(k.variancePct)}
-          deltaDirection={k.variance >= 0 ? "up" : "down"}
-          deltaGoodWhen="up"
-        />
-      </div>
-
-      {/* SECOND KPI ROW */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <StatTile
-          label="Mission Coverage Score"
-          value={`${k.coverage.toFixed(0)}%`}
-          sublabel="Criticality-weighted readiness"
-          icon={<Gauge className="h-4 w-4" />}
-          accent={k.coverage >= 92 ? "emerald" : k.coverage >= 82 ? "amber" : "red"}
         />
         <StatTile
           label="Hiring Plan Status"
@@ -128,18 +116,91 @@ export default function ExecutiveDashboard({
           sublabel={
             k.timeToTargetMonths >= 99
               ? "Attrition outpaces hiring"
-              : "Time to fill authorized positions"
+              : "To fill authorized positions"
           }
           icon={<TrendingUp className="h-4 w-4" />}
           accent={k.timeToTargetMonths >= 99 ? "red" : k.timeToTargetMonths > 36 ? "amber" : "emerald"}
+          statusWord={k.timeToTargetMonths >= 99 ? "Off track" : k.timeToTargetMonths > 36 ? "Slow" : "On pace"}
+          statusTone={k.timeToTargetMonths >= 99 ? "red" : k.timeToTargetMonths > 36 ? "amber" : "emerald"}
         />
-        <StatTile
-          label="Risk Alerts"
-          value={fmtNum(model.alerts.length)}
-          sublabel={`${k.riskCount} division(s) at elevated+ risk`}
-          icon={<AlertTriangle className="h-4 w-4" />}
-          accent={model.alerts.length >= 4 ? "red" : model.alerts.length >= 2 ? "amber" : "emerald"}
-        />
+      </div>
+
+      {/* WHAT TO DO NEXT — recommended actions + watchlist */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader
+            title="Recommended Next Actions"
+            subtitle="Hiring prioritized by mission criticality and shortfall"
+            icon={<UserPlus className="h-4 w-4" />}
+            right={
+              <button
+                onClick={() => onNavigate("briefing")}
+                className="inline-flex items-center gap-1 text-xs font-medium text-navy-600 hover:text-navy-800"
+              >
+                Full plan <ArrowRight className="h-3 w-3" />
+              </button>
+            }
+          />
+          <ol className="divide-y divide-slate-100">
+            {hiringActions.length === 0 && (
+              <li className="px-4 py-6 text-center text-sm text-slate-500">
+                No net hiring required — divisions are at or above requirement.
+              </li>
+            )}
+            {hiringActions.map((d, i) => (
+              <li key={d.id} className="flex items-center gap-3 px-4 py-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy-700 text-xs font-semibold text-white">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-navy-900">{d.shortName}</span>
+                    <CriticalityBadge level={d.criticality} />
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Hire <strong className="text-navy-900">{fmtNum(d.gap)}</strong> FTE to reach
+                    requirement · {fmtNum(d.vacancies)} funded vacancies
+                  </p>
+                </div>
+                <Pill tone={d.coverage >= 92 ? "emerald" : d.coverage >= 82 ? "amber" : "red"}>
+                  {d.coverage.toFixed(0)}%
+                </Pill>
+              </li>
+            ))}
+          </ol>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Divisions to Watch"
+            subtitle="Highest criticality-weighted workforce risk"
+            icon={<Eye className="h-4 w-4" />}
+            right={
+              <button
+                onClick={() => onNavigate("divisions")}
+                className="inline-flex items-center gap-1 text-xs font-medium text-navy-600 hover:text-navy-800"
+              >
+                Division model <ArrowRight className="h-3 w-3" />
+              </button>
+            }
+          />
+          <ol className="divide-y divide-slate-100">
+            {watchlist.map((d, i) => (
+              <li key={d.id} className="flex items-start gap-3 px-4 py-3">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-navy-100 text-xs font-semibold text-navy-700">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-navy-900">{d.shortName}</span>
+                    <RiskBadge level={d.risk} />
+                  </div>
+                  <p className="text-xs text-slate-500">{d.riskDriver}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Card>
       </div>
 
       {/* CHARTS */}
@@ -151,14 +212,14 @@ export default function ExecutiveDashboard({
             icon={<TrendingUp className="h-4 w-4" />}
           />
           <div className="p-4">
-            <CostTrendChart data={model.timeline} />
+            <CostTrendChart data={model.timeline} plannedBudget={k.plannedBudget} />
           </div>
         </Card>
 
         <Card>
           <CardHeader
             title="FTE Demand vs. Supply"
-            subtitle="Mission-required demand against projected onboard supply"
+            subtitle="Red band is the coverage gap — mission demand above projected supply"
             icon={<Users className="h-4 w-4" />}
           />
           <div className="p-4">
@@ -189,61 +250,38 @@ export default function ExecutiveDashboard({
         </Card>
       </div>
 
-      {/* INSIGHT + ALERTS */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <InsightPanel
-            title="What this means for leadership"
-            tone={k.variance < 0 || k.coverage < 88 ? "amber" : "navy"}
-            icon={<Gauge className="h-4 w-4" />}
-          >
-            Under the <strong>{scenario.name}</strong> scenario, OCFO carries{" "}
-            <strong>{fmtNum(k.onboard)}</strong> onboard FTE against{" "}
-            <strong>{fmtNum(k.required)}</strong> mission-required positions — a coverage of{" "}
-            <strong>{k.coverage.toFixed(0)}%</strong>. Projected annual personnel cost of{" "}
-            <strong>{fmtUSDCompact(k.annualCost)}</strong> runs{" "}
-            <strong>
-              {k.variance >= 0 ? "under" : "over"} the planned topline by{" "}
-              {fmtUSDCompact(Math.abs(k.variance))}
-            </strong>{" "}
-            ({fmtSignedPct(k.variancePct)}).{" "}
-            {k.timeToTargetMonths >= 99
-              ? "At the current pace, attrition outpaces hiring and authorized vacancies will not close — a deliberate intervention is required."
-              : `At the current pace, authorized vacancies close in roughly ${k.timeToTargetMonths} months.`}
-          </InsightPanel>
-        </div>
-
-        <Card className="lg:col-span-1">
-          <CardHeader
-            title="Risk Alerts"
-            icon={<AlertTriangle className="h-4 w-4" />}
-            right={
-              <button
-                onClick={() => onNavigate("briefing")}
-                className="inline-flex items-center gap-1 text-xs font-medium text-navy-600 hover:text-navy-800"
-              >
-                Briefing <ArrowRight className="h-3 w-3" />
-              </button>
-            }
-          />
-          <ul className="divide-y divide-slate-100">
-            {model.alerts.slice(0, 5).map((a) => (
-              <li key={a.id} className="flex items-start gap-3 px-4 py-3">
-                <RiskBadge level={a.severity} />
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-navy-900">{a.title}</div>
-                  <div className="text-xs text-slate-500">{a.detail}</div>
-                </div>
-              </li>
-            ))}
-            {model.alerts.length === 0 && (
-              <li className="px-4 py-6 text-center text-sm text-slate-500">
-                No elevated risks under the active scenario.
-              </li>
-            )}
-          </ul>
-        </Card>
-      </div>
+      {/* RISK ALERTS */}
+      <Card>
+        <CardHeader
+          title="Risk Alerts"
+          subtitle="Active budget and workforce alerts under the current scenario"
+          icon={<AlertTriangle className="h-4 w-4" />}
+          right={
+            <button
+              onClick={() => onNavigate("briefing")}
+              className="inline-flex items-center gap-1 text-xs font-medium text-navy-600 hover:text-navy-800"
+            >
+              Open briefing <ArrowRight className="h-3 w-3" />
+            </button>
+          }
+        />
+        <ul className="grid grid-cols-1 gap-px bg-slate-100 sm:grid-cols-2">
+          {model.alerts.slice(0, 6).map((a) => (
+            <li key={a.id} className="flex items-start gap-3 bg-white px-4 py-3">
+              <RiskBadge level={a.severity} />
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-navy-900">{a.title}</div>
+                <div className="text-xs text-slate-500">{a.detail}</div>
+              </div>
+            </li>
+          ))}
+          {model.alerts.length === 0 && (
+            <li className="bg-white px-4 py-6 text-center text-sm text-slate-500 sm:col-span-2">
+              No elevated risks under the active scenario.
+            </li>
+          )}
+        </ul>
+      </Card>
     </div>
   );
 }

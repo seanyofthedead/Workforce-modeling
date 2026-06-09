@@ -68,7 +68,7 @@ export default function MissionEstimator() {
               icon={<Target className="h-4 w-4" />}
               right={
                 <div className="text-right">
-                  <div className="text-[11px] uppercase tracking-wide text-slate-400">
+                  <div className="text-[11px] uppercase tracking-wide text-slate-500">
                     Confidence
                   </div>
                   <Pill tone={confidenceTone}>{fmtPct(mission.confidence, 0)}</Pill>
@@ -157,7 +157,7 @@ function Stat({
   };
   return (
     <div>
-      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-0.5 text-lg font-semibold tabular ${tones[tone]}`}>{value}</div>
     </div>
   );
