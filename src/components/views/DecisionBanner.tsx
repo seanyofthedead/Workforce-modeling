@@ -3,6 +3,7 @@
 import { ShieldHalf, Gauge, Scale, AlertTriangle } from "lucide-react";
 import { useModel } from "../model-context";
 import { RiskBadge } from "../ui";
+import { AnimatedNumber } from "../AnimatedNumber";
 import { SCENARIOS } from "@/lib/data";
 import { fmtUSDCompact, fmtNum } from "@/lib/format";
 
@@ -73,21 +74,21 @@ export default function DecisionBanner() {
           <HeroStat
             icon={<Gauge className="h-4 w-4" />}
             label="Mission coverage"
-            value={`${k.coverage.toFixed(0)}%`}
+            value={<AnimatedNumber value={k.coverage} format={(n) => `${n.toFixed(0)}%`} />}
             word={understaffed ? "Understaffed" : "At target"}
             tone={coverageTone}
           />
           <HeroStat
             icon={<Scale className="h-4 w-4" />}
             label="Cost vs topline"
-            value={fmtUSDCompact(k.variance)}
+            value={<AnimatedNumber value={k.variance} format={fmtUSDCompact} />}
             word={overTopline ? "Over topline" : "Within budget"}
             tone={varianceTone}
           />
           <HeroStat
             icon={<AlertTriangle className="h-4 w-4" />}
             label="Risk posture"
-            value={`${k.riskCount}`}
+            value={<AnimatedNumber value={k.riskCount} format={(n) => fmtNum(n)} />}
             valueSuffix=" div."
             word={k.risk}
             tone={k.risk === "Severe" ? "red" : k.risk === "Elevated" ? "amber" : "emerald"}
@@ -116,7 +117,7 @@ function HeroStat({
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: React.ReactNode;
   valueSuffix?: string;
   word: string;
   tone: "emerald" | "amber" | "red";

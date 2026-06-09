@@ -12,7 +12,7 @@ different hiring scenarios?*
 
 **Status legend:** `NOT STARTED` · `IN PROGRESS` · `COMPLETE`
 
-_Last updated: 2026-06-09 (P0 complete; P1 complete)_
+_Last updated: 2026-06-09 (P0, P1, and P2 all complete)_
 
 ---
 
@@ -138,10 +138,10 @@ Significantly improve executive understanding; carry the product from ~84 to ~91
 ---
 
 ### P2 — Future Enhancements
-Polish; not required for demo success.
+Polish; not required for demo success. **All P2 items complete (2026-06-09).**
 
 #### P2-1 · KPI count-up transition on scenario change
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** Metric changes are abrupt; the eye doesn't track the swing.
 - **Proposed Enhancement:** Animate KPI values over ≤400ms on change, respecting
   `prefers-reduced-motion`.
@@ -149,21 +149,21 @@ Polish; not required for demo success.
 - **Estimated Effort:** Small (S).
 
 #### P2-2 · Guided demo / "Start here" mode
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** First-time and unattended viewers face a metric wall with no entry point.
 - **Proposed Enhancement:** A 5-step coachmark tour following the demo narrative flow.
 - **Expected Demo Impact:** Confident self-service; strong kiosk/booth mode.
 - **Estimated Effort:** Large (L).
 
 #### P2-3 · Scenario A/B compare view
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** Tradeoffs are a dense table; no visual side-by-side.
 - **Proposed Enhancement:** Two-scenario picker rendering KPIs/charts side by side + deltas.
 - **Expected Demo Impact:** Frames the central leadership choice explicitly.
 - **Estimated Effort:** Large (L).
 
 #### P2-4 · Division drill-down detail
-- **Status:** NOT STARTED
+- **Status:** COMPLETE
 - **User Problem:** Division cards are a roster, not an investigation.
 - **Proposed Enhancement:** Clickable cards opening a focused panel (grade mix, vacancy
   trajectory, risk drivers, hiring sequence).
@@ -211,3 +211,15 @@ _Move items here as work finishes; preserve history._
 - **P1-6 · Housekeeping** — _2026-06-09._ Calmer slate demo banner with a "Demo data" pill,
   "Planning FY2026 · as of June 2026" stamp in the masthead, and `slate-400`→`slate-500`
   contrast bump on metric micro-labels.
+- **P2-1 · KPI count-up animation** — _2026-06-09._ New `AnimatedNumber.tsx` (easeOutCubic,
+  ~380ms, respects `prefers-reduced-motion`) drives the Decision Banner hero metrics, so
+  scenario swings register as motion rather than an abrupt jump.
+- **P2-2 · Guided demo mode** — _2026-06-09._ "Start here" button launches a 5-step coachmark
+  overlay (`GuidedDemo` in `CommandCenter.tsx`) that drives the tab and scenario at each step,
+  following the demo narrative; non-blocking bottom card with progress and Back/Next/Finish.
+- **P2-3 · Scenario A/B compare** — _2026-06-09._ New `ScenarioCompare.tsx` tab: pick any two
+  scenarios, see KPIs side by side with a signed/colored Δ column, two staffing waterfalls,
+  and a one-line "the choice" summary.
+- **P2-4 · Division drill-down** — _2026-06-09._ Division cards and table rows are now clickable
+  into a `DivisionDetail` modal (staffing waterfall, full metrics, coverage with trajectory
+  note, and a grade-mix breakdown).
