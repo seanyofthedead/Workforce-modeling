@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   SlidersHorizontal,
   RotateCcw,
@@ -11,7 +12,7 @@ import {
 import { useModel } from "../model-context";
 import { Card, CardHeader, SectionTitle, RiskBadge, InsightPanel } from "../ui";
 import { SCENARIOS } from "@/lib/data";
-import { ScenarioParams } from "@/lib/types";
+import { ScenarioParams, DivisionLever } from "@/lib/types";
 import {
   fmtNum,
   fmtUSDCompact,
@@ -59,6 +60,8 @@ interface SliderDef {
   step: number;
   hint: string;
   format: (v: number) => string;
+  /** Whether this lever can be overridden per division. */
+  perDivision: boolean;
 }
 
 const SLIDERS: SliderDef[] = [
@@ -70,6 +73,7 @@ const SLIDERS: SliderDef[] = [
     step: 0.005,
     hint: "Annual separations as a share of onboard strength",
     format: (v) => fmtPct(v),
+    perDivision: true,
   },
   {
     key: "payRaisePct",
@@ -79,6 +83,7 @@ const SLIDERS: SliderDef[] = [
     step: 0.0025,
     hint: "Annual pay and locality adjustment",
     format: (v) => fmtPct(v),
+    perDivision: false,
   },
   {
     key: "hiringPace",
@@ -88,6 +93,7 @@ const SLIDERS: SliderDef[] = [
     step: 0.05,
     hint: "Share of the vacancy gap filled per year",
     format: (v) => fmtPct(v, 0),
+    perDivision: true,
   },
   {
     key: "contractorConversionPct",
@@ -97,6 +103,7 @@ const SLIDERS: SliderDef[] = [
     step: 0.01,
     hint: "Contractor capacity converted to federal FTE",
     format: (v) => fmtPct(v, 0),
+    perDivision: true,
   },
   {
     key: "budgetDeltaPct",
@@ -106,6 +113,7 @@ const SLIDERS: SliderDef[] = [
     step: 0.01,
     hint: "Change to the planned personnel topline",
     format: (v) => fmtSignedPct(v, 0),
+    perDivision: false,
   },
   {
     key: "missionDemandGrowthPct",
@@ -115,8 +123,77 @@ const SLIDERS: SliderDef[] = [
     step: 0.01,
     hint: "Annual growth in mission-required staffing",
     format: (v) => fmtSignedPct(v, 0),
+    perDivision: true,
   },
 ];
+
+/** One lever row. In division mode, non-per-division levers render read-only. */
+function LeverSlider({
+  def,
+  value,
+  onChange,
+  disabled = false,
+  overridden = false,
+  onRevert,
+  enterpriseTag = false,
+}: {
+  def: SliderDef;
+  value: number;
+  onChange?: (v: number) => void;
+  disabled?: boolean;
+  overridden?: boolean;
+  onRevert?: () => void;
+  enterpriseTag?: boolean;
+}) {
+  return (
+    <div className={disabled ? "opacity-60" : undefined}>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-navy-900">
+          {def.label}
+          {enterpriseTag && (
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              enterprise
+            </span>
+          )}
+          {overridden && (
+            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+              overridden
+            </span>
+          )}
+        </label>
+        <div className="flex items-center gap-1.5">
+          <span className="rounded-md bg-navy-50 px-2 py-0.5 text-xs font-semibold tabular text-navy-700">
+            {def.format(value)}
+          </span>
+          {overridden && onRevert && (
+            <button
+              type="button"
+              onClick={onRevert}
+              aria-label={`Revert ${def.label} to enterprise`}
+              title="Revert to enterprise"
+              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-navy-700"
+            >
+              <RotateCcw className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={def.min}
+        max={def.max}
+        step={def.step}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange?.(parseFloat(e.target.value))}
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-navy-700 disabled:cursor-not-allowed"
+      />
+      <p className="mt-1 text-[11px] text-slate-400">
+        {disabled ? "Set at the enterprise level" : def.hint}
+      </p>
+    </div>
+  );
+}
 
 export default function ScenarioModeling() {
   const {
@@ -125,13 +202,24 @@ export default function ScenarioModeling() {
     model,
     baselineModel,
     isCustom,
+    overrides,
+    customizedDivisionIds,
     selectScenario,
     setParam,
     resetScenario,
+    setDivisionParam,
+    resetDivisionParam,
+    resetDivision,
+    resetAllDivisions,
   } = useModel();
+
+  const [scope, setScope] = useState<"enterprise" | "division">("enterprise");
+  const [divId, setDivId] = useState<string>(model.divisions[0]?.id ?? "");
 
   const k = model.kpis;
   const b = baselineModel.kpis;
+  const divOverride = overrides[divId] ?? {};
+  const divHasOverrides = Object.keys(divOverride).length > 0;
 
   const ttt = (m: number) => (m >= 99 ? "Off track" : `${m} mo`);
   const impact: ImpactItem[] = [
@@ -260,7 +348,7 @@ export default function ScenarioModeling() {
         <CardHeader
           title="Impact vs. Baseline"
           subtitle={
-            isCustom
+            isCustom || customizedDivisionIds.length > 0
               ? "Live effect of your adjustments against the Baseline / Current Plan"
               : "Effect of this scenario against the Baseline / Current Plan"
           }
@@ -277,41 +365,126 @@ export default function ScenarioModeling() {
         <Card className="lg:col-span-2">
           <CardHeader
             title="Modeling Levers"
-            subtitle={isCustom ? "Custom-adjusted scenario" : "Scenario defaults"}
+            subtitle={
+              scope === "enterprise"
+                ? isCustom
+                  ? "Custom-adjusted scenario"
+                  : "Scenario defaults"
+                : "Per-division overrides on the enterprise defaults"
+            }
             icon={<SlidersHorizontal className="h-4 w-4" />}
             right={
-              isCustom ? (
+              scope === "enterprise" ? (
+                isCustom ? (
+                  <button
+                    onClick={resetScenario}
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    <RotateCcw className="h-3 w-3" /> Reset
+                  </button>
+                ) : undefined
+              ) : divHasOverrides ? (
                 <button
-                  onClick={resetScenario}
+                  onClick={() => resetDivision(divId)}
                   className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
                 >
-                  <RotateCcw className="h-3 w-3" /> Reset
+                  <RotateCcw className="h-3 w-3" /> Reset division
                 </button>
               ) : undefined
             }
           />
-          <div className="space-y-5 p-5">
-            {SLIDERS.map((s) => (
-              <div key={s.key}>
-                <div className="mb-1 flex items-center justify-between">
-                  <label className="text-sm font-medium text-navy-900">{s.label}</label>
-                  <span className="rounded-md bg-navy-50 px-2 py-0.5 text-xs font-semibold tabular text-navy-700">
-                    {s.format(params[s.key])}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={s.min}
-                  max={s.max}
-                  step={s.step}
-                  value={params[s.key]}
-                  onChange={(e) => setParam(s.key, parseFloat(e.target.value))}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-navy-700"
-                />
-                <p className="mt-1 text-[11px] text-slate-400">{s.hint}</p>
-              </div>
-            ))}
+
+          {/* Scope toggle */}
+          <div className="border-b border-slate-100 px-5 py-3">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+              <button
+                onClick={() => setScope("enterprise")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  scope === "enterprise" ? "bg-navy-700 text-white" : "text-slate-600"
+                }`}
+              >
+                Enterprise
+              </button>
+              <button
+                onClick={() => setScope("division")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  scope === "division" ? "bg-navy-700 text-white" : "text-slate-600"
+                }`}
+              >
+                By division
+              </button>
+            </div>
+            {scope === "division" && (
+              <select
+                value={divId}
+                onChange={(e) => setDivId(e.target.value)}
+                className="mt-3 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-navy-900 outline-none focus:ring-2 focus:ring-navy-500"
+              >
+                {model.divisions.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
+
+          {/* Levers */}
+          <div className="space-y-5 p-5">
+            {scope === "enterprise"
+              ? SLIDERS.map((s) => (
+                  <LeverSlider
+                    key={s.key}
+                    def={s}
+                    value={params[s.key]}
+                    onChange={(v) => setParam(s.key, v)}
+                  />
+                ))
+              : SLIDERS.map((s) => {
+                  if (!s.perDivision) {
+                    return (
+                      <LeverSlider
+                        key={s.key}
+                        def={s}
+                        value={params[s.key]}
+                        disabled
+                        enterpriseTag
+                      />
+                    );
+                  }
+                  const leverKey = s.key as DivisionLever;
+                  const overridden = leverKey in divOverride;
+                  const value = overridden
+                    ? (divOverride[leverKey] as number)
+                    : params[s.key];
+                  return (
+                    <LeverSlider
+                      key={s.key}
+                      def={s}
+                      value={value}
+                      overridden={overridden}
+                      onChange={(v) => setDivisionParam(divId, leverKey, v)}
+                      onRevert={() => resetDivisionParam(divId, leverKey)}
+                    />
+                  );
+                })}
+          </div>
+
+          {/* Customized summary */}
+          {scope === "division" && customizedDivisionIds.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs">
+              <span className="text-slate-500">
+                {customizedDivisionIds.length} of {model.divisions.length} divisions
+                customized
+              </span>
+              <button
+                onClick={resetAllDivisions}
+                className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 font-medium text-slate-600 hover:bg-slate-50"
+              >
+                <RotateCcw className="h-3 w-3" /> Reset all divisions
+              </button>
+            </div>
+          )}
         </Card>
 
         {/* Live metrics */}
