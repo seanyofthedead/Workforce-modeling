@@ -275,22 +275,37 @@ function DivisionDetail({
 
         {/* Metrics */}
         <div className="grid grid-cols-2 gap-px border-b border-slate-100 bg-slate-100 sm:grid-cols-4">
-          <Metric label="Onboard FTE" value={fmtNum(d.onboard)} />
-          <Metric label="Authorized" value={fmtNum(d.authorized)} />
-          <Metric label="Required" value={fmtNum(d.required)} />
+          <Metric className="bg-white px-5 py-3" label="Onboard FTE" value={fmtNum(d.onboard)} />
+          <Metric className="bg-white px-5 py-3" label="Authorized" value={fmtNum(d.authorized)} />
+          <Metric className="bg-white px-5 py-3" label="Required" value={fmtNum(d.required)} />
           <Metric
+            className="bg-white px-5 py-3"
             label={d.gap > 0 ? "Shortfall" : d.gap < 0 ? "Surplus" : "Balanced"}
             value={fmtSigned(-d.gap)}
             tone={d.gap > 0 ? "red" : d.gap < 0 ? "emerald" : "slate"}
           />
-          <Metric label="Funded vacancies" value={fmtNum(d.vacancies)} tone="amber" />
           <Metric
+            className="bg-white px-5 py-3"
+            label="Funded vacancies"
+            value={fmtNum(d.vacancies)}
+            tone="amber"
+          />
+          <Metric
+            className="bg-white px-5 py-3"
             label="Projected EOY vac."
             value={fmtNum(d.projectedVacancies)}
             tone={erosion > 0 ? "red" : "emerald"}
           />
-          <Metric label="Avg loaded cost" value={fmtUSDCompact(d.avgLoadedCost)} />
-          <Metric label="Annual cost" value={fmtUSDCompact(d.annualCost)} />
+          <Metric
+            className="bg-white px-5 py-3"
+            label="Avg loaded cost"
+            value={fmtUSDCompact(d.avgLoadedCost)}
+          />
+          <Metric
+            className="bg-white px-5 py-3"
+            label="Annual cost"
+            value={fmtUSDCompact(d.annualCost)}
+          />
         </div>
 
         {/* Coverage */}
@@ -338,10 +353,12 @@ function Metric({
   label,
   value,
   tone = "navy",
+  className = "",
 }: {
   label: string;
   value: string;
   tone?: "navy" | "red" | "emerald" | "amber" | "slate";
+  className?: string;
 }) {
   const tones: Record<string, string> = {
     navy: "text-navy-900",
@@ -351,7 +368,7 @@ function Metric({
     slate: "text-slate-600",
   };
   return (
-    <div>
+    <div className={className}>
       <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
         {label}
       </div>

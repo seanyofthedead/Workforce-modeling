@@ -142,9 +142,27 @@ export function DemandSupplyChart({ data }: { data: FiscalYearPoint[] }) {
           wrapperStyle={{ fontSize: 11 }}
           iconType="plainline"
           payload={[
-            { value: "Required FTE (demand)", type: "plainline", color: GOLD, id: "required" },
-            { value: "Filled FTE (supply)", type: "plainline", color: NAVY, id: "filled" },
-            { value: "Coverage gap", type: "square", color: RED, id: "shortfall" },
+            {
+              value: "Required FTE (demand)",
+              type: "plainline",
+              color: GOLD,
+              id: "required",
+              payload: { strokeDasharray: "5 4" },
+            },
+            {
+              value: "Filled FTE (supply)",
+              type: "plainline",
+              color: NAVY,
+              id: "filled",
+              payload: { strokeDasharray: "0" },
+            },
+            {
+              value: "Coverage gap",
+              type: "square",
+              color: RED,
+              id: "shortfall",
+              payload: { strokeDasharray: "0" },
+            },
           ]}
         />
         {/* invisible base lifts the shortfall band up to the supply line */}
