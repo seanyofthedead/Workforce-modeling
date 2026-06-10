@@ -78,13 +78,6 @@ export type DivisionLever =
   | "contractorConversionPct"
   | "missionDemandGrowthPct";
 
-export const DIVISION_LEVERS: DivisionLever[] = [
-  "hiringPace",
-  "attritionRate",
-  "contractorConversionPct",
-  "missionDemandGrowthPct",
-];
-
 /** A division's lever overrides; an absent lever means "inherit enterprise". */
 export type DivisionOverride = Partial<Pick<ScenarioParams, DivisionLever>>;
 
