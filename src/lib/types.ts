@@ -68,6 +68,29 @@ export interface ScenarioParams {
   missionDemandGrowthPct: number;
 }
 
+// --- Per-division overrides ----------------------------------------------
+
+/** The four operational levers that may be overridden per division.
+ *  payRaisePct and budgetDeltaPct are deliberately excluded (enterprise-wide). */
+export type DivisionLever =
+  | "hiringPace"
+  | "attritionRate"
+  | "contractorConversionPct"
+  | "missionDemandGrowthPct";
+
+export const DIVISION_LEVERS: DivisionLever[] = [
+  "hiringPace",
+  "attritionRate",
+  "contractorConversionPct",
+  "missionDemandGrowthPct",
+];
+
+/** A division's lever overrides; an absent lever means "inherit enterprise". */
+export type DivisionOverride = Partial<Pick<ScenarioParams, DivisionLever>>;
+
+/** Keyed by division id; an absent id (or empty override) means "inherit all". */
+export type DivisionOverrides = Record<string, DivisionOverride>;
+
 export interface Scenario {
   id: string;
   name: string;
