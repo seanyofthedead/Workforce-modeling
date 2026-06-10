@@ -30,6 +30,7 @@ import {
   RiskAlert,
   RiskLevel,
   ScenarioParams,
+  DivisionOverrides,
 } from "./types";
 
 const PROJECTION_YEARS = 5; // FY2026 -> FY2030
@@ -490,11 +491,26 @@ function fmtShort(v: number): string {
   return `$${v.toFixed(0)}`;
 }
 
+/** Merge a division's overrides on top of the enterprise params. */
+export function resolveParams(
+  global: ScenarioParams,
+  override?: DivisionOverrides[string]
+): ScenarioParams {
+  return override ? { ...global, ...override } : global;
+}
+
 // --- public entry point ---------------------------------------------------
 
-export function computeModel(scenarioId: string, p: ScenarioParams): ComputedModel {
-  const projections = DIVISIONS.map((d) => projectDivision(d, p));
-  const divisions = DIVISIONS.map((d, i) => buildDivisionResult(d, projections[i], p));
+export function computeModel(
+  scenarioId: string,
+  p: ScenarioParams,
+  overrides: DivisionOverrides = {}
+): ComputedModel {
+  const effective = DIVISIONS.map((d) => resolveParams(p, overrides[d.id]));
+  const projections = DIVISIONS.map((d, i) => projectDivision(d, effective[i]));
+  const divisions = DIVISIONS.map((d, i) =>
+    buildDivisionResult(d, projections[i], effective[i])
+  );
   const timeline = buildTimeline(projections);
   const timeToTargetMonths = deriveTimeToTargetMonths(projections);
   const kpis = buildKpis(divisions, timeline, p, timeToTargetMonths);
