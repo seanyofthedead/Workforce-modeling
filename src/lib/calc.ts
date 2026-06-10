@@ -34,6 +34,11 @@ import {
 
 const PROJECTION_YEARS = 5; // FY2026 -> FY2030
 
+// Share of authorized strength that counts as "effectively at target". The
+// projection converges toward a residual vacancy floor (attrition never fully
+// stops), so the target is full-enough staffing rather than a literal zero gap.
+const TARGET_FILL_RATE = 0.95;
+
 const CRITICALITY_WEIGHT: Record<Criticality, number> = {
   Critical: 1.5,
   High: 1.15,
@@ -234,6 +239,43 @@ function buildTimeline(projections: DivProjection[]): FiscalYearPoint[] {
   return points;
 }
 
+/**
+ * Months until authorized vacancies are effectively closed, read off the
+ * year-by-year projection rather than a flat net-fill extrapolation.
+ *
+ * Because hiring fills a shrinking share of a shrinking gap while attrition
+ * compounds, the enterprise vacancy curve is non-linear and converges toward a
+ * floor — a single-year net rate can't describe when it actually crosses the
+ * line. Here we walk the real trajectory (current posture at month 0, then the
+ * end of each projected fiscal year), find where it drops to the target
+ * threshold ({@link TARGET_FILL_RATE} of authorized strength), and linearly
+ * interpolate the crossing month. If the curve plateaus above the threshold
+ * within the horizon, attrition is outpacing hiring and the target is not
+ * reachable at this pace.
+ */
+function deriveTimeToTargetMonths(projections: DivProjection[]): number {
+  const authorized = sum(DIVISIONS.map((d) => d.authorized));
+  const threshold = authorized * (1 - TARGET_FILL_RATE);
+
+  // Vacancy trajectory: index 0 = today, index y+1 = end of projected FY y.
+  const trajectory = [sum(DIVISIONS.map((d) => Math.max(0, d.authorized - d.onboard)))];
+  for (let y = 0; y < PROJECTION_YEARS; y++) {
+    trajectory.push(sum(projections.map((proj) => proj.vacanciesByYear[y])));
+  }
+
+  if (trajectory[0] <= threshold) return 0; // already at full strength
+  for (let i = 1; i < trajectory.length; i++) {
+    const prev = trajectory[i - 1];
+    const cur = trajectory[i];
+    if (cur <= threshold) {
+      // Interpolate between the two bracketing fiscal-year points.
+      const frac = (prev - threshold) / (prev - cur);
+      return Math.round((i - 1 + frac) * 12);
+    }
+  }
+  return 99; // vacancies plateau above target — not reachable at this pace
+}
+
 function buildGradeRollup(divisions: DivisionResult[], p: ScenarioParams): GradeRollup[] {
   const current = {} as Record<Grade, number>;
   const recommended = {} as Record<Grade, number>;
@@ -299,7 +341,8 @@ function buildGradeRollup(divisions: DivisionResult[], p: ScenarioParams): Grade
 function buildKpis(
   divisions: DivisionResult[],
   timeline: FiscalYearPoint[],
-  p: ScenarioParams
+  p: ScenarioParams,
+  timeToTargetMonths: number
 ): KpiSummary {
   const onboard = sum(divisions.map((d) => d.onboard));
   const authorized = sum(DIVISIONS.map((d) => d.authorized));
@@ -320,16 +363,6 @@ function buildKpis(
     covDen += w;
   }
   const coverage = covDen > 0 ? covNum / covDen : 0;
-
-  // Time to fill all authorized vacancies at the scenario's net fill rate.
-  const totalGapToAuth = Math.max(0, authorized - onboard);
-  const annualHires = totalGapToAuth * p.hiringPace;
-  const annualLosses = onboard * p.attritionRate;
-  const netAnnual = annualHires - annualLosses;
-  let timeToTargetMonths: number;
-  if (totalGapToAuth <= 1) timeToTargetMonths = 0;
-  else if (netAnnual <= 0) timeToTargetMonths = 99; // not achievable at this pace
-  else timeToTargetMonths = Math.min(99, Math.round((totalGapToAuth / netAnnual) * 12));
 
   const severe = divisions.filter((d) => d.risk === "Severe").length;
   const elevated = divisions.filter((d) => d.risk === "Elevated").length;
@@ -463,7 +496,8 @@ export function computeModel(scenarioId: string, p: ScenarioParams): ComputedMod
   const projections = DIVISIONS.map((d) => projectDivision(d, p));
   const divisions = DIVISIONS.map((d, i) => buildDivisionResult(d, projections[i], p));
   const timeline = buildTimeline(projections);
-  const kpis = buildKpis(divisions, timeline, p);
+  const timeToTargetMonths = deriveTimeToTargetMonths(projections);
+  const kpis = buildKpis(divisions, timeline, p, timeToTargetMonths);
   const gradeRollup = buildGradeRollup(divisions, p);
   const alerts = buildAlerts(divisions, kpis);
   const missions = buildMissions(p);
